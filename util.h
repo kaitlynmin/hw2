@@ -13,20 +13,22 @@
 template <typename T>
 std::set<T> setIntersection(std::set<T>& s1, std::set<T>& s2)
 {
-
-
-
-
-
+  std::set<T> newSet;
+  typename std::set<T>::iterator it;
+  for (it = s1.begin(); it != s1.end(); ++it) {
+    if (s2.find(*it) != s2.end()) {
+      newSet.insert(*it);
+    }
+  }
+  return newSet;
 }
+
 template <typename T>
 std::set<T> setUnion(std::set<T>& s1, std::set<T>& s2)
 {
-
-
-
-
-
+  std::set<T> newSet = s1;
+  newSet.insert(s2.begin(), s2.end());
+  return newSet;
 }
 
 /***********************************************/
