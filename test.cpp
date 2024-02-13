@@ -1,28 +1,37 @@
-#include "mydatastore.h" // Assuming MyDataStore is defined in a header file
+#include "mydatastore.h"
+#include "book.h"
 #include <iostream>
-#include <sstream>
 
 int main() {
-  // Create a test user
-  User* user = new User("Alice", 10000.00, 1);
+    // Create a MyDataStore instance
+    MyDataStore dataStore;
 
-  // Print user balance before dump
-  std::cout << "User balance before dump: " << user->getBalance() << std::endl;
+    // Create a user with sufficient balance
+    User* user = new User("user1", 10000.0, 0);
+    dataStore.addUser(user);
 
-  // Open a temporary output stream for testing
-  std::ostringstream ofile; // In-memory stream
+    // Add a large number of products to the data store
+    const int numProducts = 10000;
+    for (int i = 0; i < numProducts; ++i) {
+        std::string title = "Book " + std::to_string(i);
+        dataStore.addProduct(new Book("book", title, 10.0, 100, "ISBN-" + std::to_string(i), "Author " + std::to_string(i)));
+    }
 
-  // Perform the dump
-  user->dump(ofile);
+    // Add all products to the user's cart
+    for (int i = 0; i < numProducts; ++i) {
+        dataStore.addToCart("user1", i + 1);
+    }
 
-  // Get the dumped content as a string
-  std::string output = ofile.str();
+    // Buy all products from the cart
+    dataStore.buyCart("user1");
 
-  // Print the dumped content
-  std::cout << "Dumped content:" << std::endl << output << std::endl;
+    // Display the user's remaining balance
+    std::cout << "User's remaining balance: $" << user->getBalance() << std::endl;
 
-  // Clean up memory
-  delete user;
+    // Clean up allocated memory
+    delete user;
 
-  return 0;
+    return 0;
 }
+
+

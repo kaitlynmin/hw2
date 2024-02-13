@@ -52,7 +52,7 @@ void MyDataStore::updateKeywordIndex(Product* p) {
 void MyDataStore::addProduct(Product* p) {
   // adds a new product to the data store, given pointer is stored in the _products vector
   // products vector stores all the available products in database
-  // maybe update keyword index so newly added product has relevant keywords
+  // maybe update keyword index so newly added product has relevant 
   getProducts().push_back(p);
   updateKeywordIndex(p);
 }
@@ -63,8 +63,8 @@ std::vector<Product*> MyDataStore::search(std::vector<std::string>& terms, int t
   // display via displayproducts() function in amazon.cpp
   // search should be case insensitive -> turn all entered keywords into lower containes
 
-  for (size_t i=0; i < terms.size(); ++i) {
-    terms[i] = convToLower(terms[i]);
+  for (size_t i = 0; i < terms.size(); ++i) {
+      terms[i] = convToLower(terms[i]);
   }
 
   std::set<Product*> hitsSet;
@@ -73,19 +73,62 @@ std::vector<Product*> MyDataStore::search(std::vector<std::string>& terms, int t
     return std::vector<Product*>();
   }
 
-  hitsSet = _keywordindex[terms[0]];
+  if (terms.size() == 1) {
+    std::set<Product*> products = _keywordindex[terms[0]];
+    std::vector<Product*> productList(products.begin(), products.end());
+    return productList;
+  }
 
-  for (size_t i = 1; i < terms.size(); ++i) {
-    std::set<Product*> possibleResults = _keywordindex[terms[i]];
-    if (type == 0) {
-      hitsSet = setIntersection(hitsSet, possibleResults);
-    } else if (type == 1) {
-      hitsSet = setUnion(hitsSet, possibleResults);
+  hitsSet = getKeywordIndex()[terms[0]];
+
+  for (size_t i =1; i < terms.size(); ++i) {
+    std::set<Product*> possibleResults;
+    if (_keywordindex.find(terms[i]) != _keywordindex.end()) {
+      possibleResults = _keywordindex[terms[i]];
+      if (type == 0) {
+        hitsSet = setIntersection(hitsSet, possibleResults);
+      } else if (type == 1) {
+        hitsSet = setUnion(hitsSet, possibleResults);
+      }
     }
   }
   std::vector<Product*> hits(hitsSet.begin(), hitsSet.end());
   getLastSearchResults() = hits;
   return hits;
+  // if (terms.size() == 1) {
+  //   std::string term = convToLower(terms[0]);
+  //   if (_keywordindex.find(term) != _keywordindex.end()) {
+  //     return std::vector<Product*>(_keywordindex[term].begin(), _keywordindex[term].end());
+  //   } else {
+  //     return std::vector<Product*>();
+  //   }
+  // }
+
+  // for (size_t i=0; i < terms.size(); ++i) {
+  //   terms[i] = convToLower(terms[i]);
+  // }
+
+  // std::set<Product*> hitsSet;
+
+  // if (terms.empty()) {
+  //   return std::vector<Product*>();
+  // }
+
+  // hitsSet = getKeywordIndex()[terms[0]];
+
+  // if (terms.size() > 1) {
+  // for (size_t i = 1; i < terms.size(); ++i) {
+  //   std::set<Product*> possibleResults = _keywordindex[terms[i]];
+  //   if (type == 0) {
+  //     hitsSet = setIntersection(hitsSet, possibleResults);
+  //   } else if (type == 1) {
+  //     hitsSet = setUnion(hitsSet, possibleResults);
+  //     }
+  //   }
+  // }
+  // std::vector<Product*> hits(hitsSet.begin(), hitsSet.end());
+  // getLastSearchResults() = hits;
+  // return hits;
 }
 
 
@@ -115,25 +158,43 @@ void MyDataStore::dump(std::ostream& ofile) {
   getUsers().clear();
 }
 
+
 void MyDataStore::addToCart(const std::string& username, int hit_result_index) {
 // from products that search function print, choose which index product you want to added
 // if both valid, add to cart to user using index
 // if not valid, print "Invalid request" and do nothing
+  bool userExists = false;
+  for (User* user : getUsers()) {
+    if (user->getName() == username) {
+      userExists = true;
+      break;
+  }
+  }
+  if (!userExists) {
+    std::cout << "Invalid request : user does not exist" << std::endl;
+    return;
+  }
+
+  std::vector<Product*> lastSearchResults = getLastSearchResults();
+  if (hit_result_index < 1 ||hit_result_index > static_cast<int>(lastSearchResults.size())) {
+    std::cout << "Invalid request : hit index our of range" << std::endl;
+    return;
+  }
+
+  Product* productToAdd = lastSearchResults[hit_result_index - 1];
+
   std::unordered_map<std::string, std::queue<Product*>>::iterator it = _usercarts.find(username);
   if (it == _usercarts.end()) {
-    std::cout << "Invalid request" << std::endl;
-    return;
+    std::queue<Product*> newCart;
+    newCart.push(productToAdd);
+    _usercarts[username] = newCart;
+  } else {
+    it->second.push(productToAdd);
   }
-  std::queue<Product*> userCart = _usercarts[username];
-  std::vector<Product*> lastSearchResults = getLastSearchResults();
-
-  if (hit_result_index < 0 || hit_result_index > static_cast<int>(lastSearchResults.size())) {
-    std::cout << "Invalid request" << std::endl;
-    return;
-  }
-  Product* productToAdd = lastSearchResults[hit_result_index - 1];
-  userCart.push(productToAdd);
+  // std::queue<Product*> userCart = _usercarts[username];
+  // userCart.push(productToAdd);
 }
+
 
 void MyDataStore::viewCart(const std::string& username) {
 // display contents of users cart
@@ -148,10 +209,13 @@ void MyDataStore::viewCart(const std::string& username) {
   if (userCart.empty()) {
     return;
   }
+  int itemCount = 1;
   while(!userCart.empty()) {
     Product* product = userCart.front();
+    std::cout << "Item " << itemCount << std::endl;
     std::cout << product->displayString() << std::endl;
     userCart.pop();
+    itemCount++;
   }
 }
 
@@ -175,17 +239,25 @@ void MyDataStore::buyCart(const std::string& username) {
     }
   }
 
+  std::queue<Product*> tempCart;
   while (!userCart.empty()) {
     Product* product = userCart.front();
     if (product->getQty() > 0 && user->getBalance() >= product->getPrice()) {
       user->deductAmount(product->getPrice());
       product->subtractQty(1);
-      userCart.pop();
     } else {
-      userCart.pop();
+      tempCart.push(product);
     }
+    userCart.pop();
   }
-  _usercarts[username] = std::queue<Product*>(userCart);
+  _usercarts[username] = userCart;
+  while (!userCart.empty()) {
+    userCart.pop();
+  }
+  while (!tempCart.empty()) {
+    userCart.push(tempCart.front());
+    tempCart.pop();
+  }
 }
 
 // void MyDataStore::saveDataBase(const std::string& filename) {

@@ -32,8 +32,11 @@ public:
   std::vector<Product*>& getProducts() {
     return _products;
   }
-  std::vector<Product*> getLastSearchResults() {
+  std::vector<Product*>& getLastSearchResults() {
     return _lastSearchResults;
+  }
+  std::unordered_map<std::string, std::set<Product*>>& getKeywordIndex() {
+    return _keywordindex;
   }
 
 private:

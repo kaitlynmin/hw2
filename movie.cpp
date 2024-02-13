@@ -1,5 +1,6 @@
 #include "movie.h"
 #include "util.h"
+#include "product.h"
 #include <sstream>
 #include <iomanip>
 
@@ -21,9 +22,11 @@ std::string Movie::getRating() const {
 }
 
 std::set<std::string> Movie::keywords() const {
-  std::set<std::string> upper_keywords = parseStringToWords(getGenre());
+  std::set<std::string> upper_keywords1 = parseStringToWords(getGenre());
+  std::set<std::string> upper_keywords2 = parseStringToWords(Product::getName());
+  upper_keywords1.insert(upper_keywords2.begin(), upper_keywords2.end());
   std::set<std::string> lower_keywords;
-  for (std::string str: upper_keywords) {
+  for (std::string str: upper_keywords1) {
       std::string lower = convToLower(str);
       lower_keywords.insert(lower);
   }
