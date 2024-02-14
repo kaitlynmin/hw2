@@ -76,6 +76,7 @@ std::vector<Product*> MyDataStore::search(std::vector<std::string>& terms, int t
   if (terms.size() == 1) {
     std::set<Product*> products = _keywordindex[terms[0]];
     std::vector<Product*> productList(products.begin(), products.end());
+    _lastSearchResults = productList;
     return productList;
   }
 
@@ -93,7 +94,8 @@ std::vector<Product*> MyDataStore::search(std::vector<std::string>& terms, int t
     }
   }
   std::vector<Product*> hits(hitsSet.begin(), hitsSet.end());
-  getLastSearchResults() = hits;
+  _lastSearchResults = hits;
+  //_lastSearchResults.insert(_lastSearchResults.begin(), hits.begin(), hits.end());
   return hits;
   // if (terms.size() == 1) {
   //   std::string term = convToLower(terms[0]);
@@ -142,7 +144,7 @@ void MyDataStore::dump(std::ostream& ofile) {
   }
   ofile << "</products>" << std::endl;
 
-  ofile << "<users>" << std::endl;
+  ofile << std::fixed << "<users>" << std::endl;
   for(User* user : getUsers()) {
     // std::cout << "Balance before dump" << user->getBalance() << "\n";
     user->dump(ofile);
@@ -164,24 +166,25 @@ void MyDataStore::addToCart(const std::string& username, int hit_result_index) {
 // if both valid, add to cart to user using index
 // if not valid, print "Invalid request" and do nothing
   bool userExists = false;
-  for (User* user : getUsers()) {
+  std::vector<User*> users = getUsers();
+  for (User* user : users) {
     if (user->getName() == username) {
       userExists = true;
       break;
-  }
+    }
   }
   if (!userExists) {
     std::cout << "Invalid request : user does not exist" << std::endl;
     return;
   }
 
-  std::vector<Product*> lastSearchResults = getLastSearchResults();
-  if (hit_result_index < 1 ||hit_result_index > static_cast<int>(lastSearchResults.size())) {
-    std::cout << "Invalid request : hit index our of range" << std::endl;
+  //std::vector<Product*> lastSearchResults = getLastSearchResults();
+  if (hit_result_index < 1 ||hit_result_index > static_cast<int>(_lastSearchResults.size())) {
+    std::cout << "Invalid request : hit index out of range" << hit_result_index << " & " << _lastSearchResults.size() << std::endl;
     return;
   }
 
-  Product* productToAdd = lastSearchResults[hit_result_index - 1];
+  Product* productToAdd = _lastSearchResults[hit_result_index - 1];
 
   std::unordered_map<std::string, std::queue<Product*>>::iterator it = _usercarts.find(username);
   if (it == _usercarts.end()) {

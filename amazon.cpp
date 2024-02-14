@@ -101,13 +101,13 @@ int main(int argc, char* argv[])
                 done = true;
             }
 	    /* Add support for other commands here */
-        else if (cmd == "ADD") {
-          string username;
-          int hit_result_index;
-          if( ss >> username >> hit_result_index) {
-            ds.addToCart(username, hit_result_index);
-          }
-          }
+            else if (cmd == "ADD") {
+                string username;
+                int hit_result_index;
+                if( ss >> username >> hit_result_index) {
+                    ds.addToCart(username, hit_result_index);
+                }
+            }
 
           else if (cmd == "VIEWCART") {
             string username;
